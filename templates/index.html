@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simple IVR Phone System</title>
+  <style>
+    :root {
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --green: #22c55e;
+      --red: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      padding: 1.25rem 2rem;
+      border-bottom: 1px solid var(--card-border);
+      background-color: rgba(30, 41, 59, 0.6);
+      backdrop-filter: blur(10px);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge {
+      background: #0284c733;
+      color: var(--accent);
+      border: 1px solid #0284c788;
+      padding: 0.2rem 0.6rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+    }
+
+    main {
+      flex: 1;
+      max-width: 1200px;
+      width: 100%;
+      margin: 2rem auto;
+      padding: 0 1.5rem;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 2rem;
+    }
+
+    @media (max-width: 860px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* PHONE CHASSIS */
+    .phone-container {
+      background-color: var(--card-bg);
+      border: 2px solid var(--card-border);
+      border-radius: 36px;
+      padding: 1.5rem;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      display: flex;
+      flex-direction: column;
+      height: fit-content;
+    }
+
+    .phone-screen {
+      background: #090d16;
+      border-radius: 20px;
+      border: 1px solid var(--card-border);
+      padding: 1.25rem;
+      min-height: 190px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+    }
+
+    .call-status {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      display: inline-block;
+      background: var(--text-muted);
+      margin-right: 4px;
+    }
+    .status-dot.active {
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+    }
+
+    .transcript-box {
+      margin: 0.75rem 0;
+      color: #e2e8f0;
+      font-size: 0.95rem;
+      line-height: 1.4;
+      max-height: 90px;
+      overflow-y: auto;
+      word-wrap: break-word;
+    }
+
+    .call-timer {
+      font-size: 0.85rem;
+      color: var(--accent);
+      font-family: monospace;
+    }
+
+    /* KEYPAD */
+    .keypad-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .key-btn {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 16px;
+      padding: 0.85rem 0;
+      color: white;
+      font-size: 1.4rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .key-btn span {
+      font-size: 0.65rem;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      margin-top: 2px;
+      font-weight: 400;
+    }
+
+    .key-btn:hover:not(:disabled) {
+      background: #334155;
+      border-color: #475569;
+      transform: translateY(-1px);
+    }
+
+    .key-btn:active:not(:disabled) {
+      background: #475569;
+      transform: translateY(1px);
+    }
+
+    .key-btn:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    /* CALL CONTROLS */
+    .call-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 0.9rem;
+      border-radius: 16px;
+      border: none;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: opacity 0.2s;
+    }
+
+    .btn-call {
+      background-color: var(--green);
+      color: white;
+    }
+    .btn-hangup {
+      background-color: var(--red);
+      color: white;
+    }
+    .action-btn:hover {
+      opacity: 0.9;
+    }
+    .action-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* AUDIO & TTS TOGGLE */
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 1rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--card-border);
+    }
+
+    /* TABS & DASHBOARD */
+    .dashboard {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.5rem;
+    }
+
+    .card h2 {
+      font-size: 1.2rem;
+      margin-bottom: 0.75rem;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .card p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      margin-bottom: 1rem;
+    }
+
+    /* TABLES & LISTS */
+    .data-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      max-height: 250px;
+      overflow-y: auto;
+    }
+
+    .item-card {
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      padding: 0.85rem 1rem;
+      border-radius: 10px;
+      font-size: 0.88rem;
+    }
+
+    .item-meta {
+      display: flex;
+      justify-content: space-between;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .tree-box {
+      background: #0f172a;
+      padding: 1rem;
+      border-radius: 10px;
+      font-family: monospace;
+      font-size: 0.85rem;
+      color: #7dd3fc;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    /* VOICEMAIL MODAL FORM IN PHONE SCREEN */
+    .vm-input-group {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .vm-input {
+      flex: 1;
+      background: #1e293b;
+      border: 1px solid var(--card-border);
+      color: white;
+      padding: 0.4rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+    .vm-submit {
+      background: var(--accent);
+      border: none;
+      color: #0f172a;
+      font-weight: 600;
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="logo">
+      📞 <span>Simple IVR System</span>
+    </div>
+    <div class="badge">Simulator &amp; Twilio Ready</div>
+  </header>
+
+  <main>
+    <!-- LEFT: VIRTUAL PHONE SIMULATOR -->
+    <section class="phone-container">
+      <div class="phone-screen">
+        <div class="call-status">
+          <div>
+            <span id="status-dot" class="status-dot"></span>
+            <span id="status-text">Idle (Ready to call)</span>
+          </div>
+          <div id="call-timer" class="call-timer">00:00</div>
+        </div>
+
+        <div id="transcript-box" class="transcript-box">
+          Press the green Call button to dial Acme Solutions IVR.
+        </div>
+
+        <div id="voicemail-form" style="display: none;">
+          <div style="font-size: 0.75rem; color: #fbbf24; margin-bottom: 4px;">🎙️ Speak or type your message:</div>
+          <div class="vm-input-group">
+            <input type="text" id="vm-text" class="vm-input" placeholder="Leave your message here..." />
+            <button class="vm-submit" onclick="submitVoicemail()">Save (#)</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- KEYPAD (DTMF) -->
+      <div class="keypad-grid">
+        <button class="key-btn" onclick="pressKey('1')" disabled>1<span>&nbsp;</span></button>
+        <button class="key-btn" onclick="pressKey('2')" disabled>2<span>ABC</span></button>
+        <button class="key-btn" onclick="pressKey('3')" disabled>3<span>DEF</span></button>
+        <button class="key-btn" onclick="pressKey('4')" disabled>4<span>GHI</span></button>
+        <button class="key-btn" onclick="pressKey('5')" disabled>5<span>JKL</span></button>
+        <button class="key-btn" onclick="pressKey('6')" disabled>6<span>MNO</span></button>
+        <button class="key-btn" onclick="pressKey('7')" disabled>7<span>PQRS</span></button>
+        <button class="key-btn" onclick="pressKey('8')" disabled>8<span>TUV</span></button>
+        <button class="key-btn" onclick="pressKey('9')" disabled>9<span>WXYZ</span></button>
+        <button class="key-btn" onclick="pressKey('*')" disabled>*<span>&nbsp;</span></button>
+        <button class="key-btn" onclick="pressKey('0')" disabled>0<span>OPER</span></button>
+        <button class="key-btn" onclick="pressKey('#')" disabled>#<span>&nbsp;</span></button>
+      </div>
+
+      <!-- ACTIONS -->
+      <div class="call-actions">
+        <button id="btn-call" class="action-btn btn-call" onclick="startCall()">📞 Call</button>
+        <button id="btn-hangup" class="action-btn btn-hangup" onclick="hangupCall()" disabled>📴 Hang Up</button>
+      </div>
+
+      <div class="toggle-row">
+        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
+          <input type="checkbox" id="voice-audio-chk" checked />
+          Read prompts aloud (TTS)
+        </label>
+        <label style="cursor: pointer; display: flex; align-items: center; gap: 0.4rem;">
+          <input type="checkbox" id="dtmf-tone-chk" checked />
+          Key tones (DTMF)
+        </label>
+      </div>
+    </section>
+
+    <!-- RIGHT: DASHBOARD & PHONE TREE INFO -->
+    <section class="dashboard">
+      <!-- PHONE TREE OVERVIEW -->
+      <div class="card">
+        <h2>🌳 Active Phone Tree (from menu_config.json)</h2>
+        <p>This hierarchy is configured in <code>menu_config.json</code>. You can change options and prompts at any time.</p>
+        <div class="tree-box" id="tree-display">Loading menu configuration...</div>
+      </div>
+
+      <!-- VOICEMAIL INBOX -->
+      <div class="card">
+        <h2>📥 Voicemail Inbox <button onclick="refreshLogs()" style="margin-left: auto; background: none; border: 1px solid var(--card-border); color: var(--accent); padding: 0.2rem 0.6rem; border-radius: 6px; cursor: pointer; font-size: 0.75rem;">Refresh</button></h2>
+        <p>Voicemails recorded during simulated calls or received from Twilio.</p>
+        <div class="data-list" id="voicemail-list">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">No voicemails yet.</div>
+        </div>
+      </div>
+
+      <!-- CALL HISTORY -->
+      <div class="card">
+        <h2>📊 Recent Call Logs</h2>
+        <p>Call traces and durations recorded by the system.</p>
+        <div class="data-list" id="call-logs-list">
+          <div style="color: var(--text-muted); font-size: 0.85rem;">No calls recorded yet.</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    let currentSessionId = null;
+    let callTimerInterval = null;
+    let callSeconds = 0;
+    let activeVoicemailMenu = null;
+    let audioCtx = null;
+
+    // Standard DTMF tone frequencies
+    const dtmfFrequencies = {
+      '1': [697, 1209], '2': [697, 1336], '3': [697, 1477],
+      '4': [770, 1209], '5': [770, 1336], '6': [770, 1477],
+      '7': [852, 1209], '8': [852, 1336], '9': [852, 1477],
+      '*': [941, 1209], '0': [941, 1336], '#': [941, 1477]
+    };
+
+    function playDtmfTone(key) {
+      if (!document.getElementById('dtmf-tone-chk').checked) return;
+      if (!dtmfFrequencies[key]) return;
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const [f1, f2] = dtmfFrequencies[key];
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+
+        osc1.frequency.value = f1;
+        osc2.frequency.value = f2;
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc1.start();
+        osc2.start();
+        osc1.stop(audioCtx.currentTime + 0.16);
+        osc2.stop(audioCtx.currentTime + 0.16);
+      } catch (e) {
+        console.warn('Audio tone error:', e);
+      }
+    }
+
+    function speakPrompt(text) {
+      if (!document.getElementById('voice-audio-chk').checked) return;
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.rate = 1.0;
+        utter.pitch = 1.0;
+        window.speechSynthesis.speak(utter);
+      }
+    }
+
+    function updateTimerDisplay() {
+      callSeconds++;
+      const mins = String(Math.floor(callSeconds / 60)).padStart(2, '0');
+      const secs = String(callSeconds % 60).padStart(2, '0');
+      document.getElementById('call-timer').textContent = `${mins}:${secs}`;
+    }
+
+    function setKeypadEnabled(enabled) {
+      document.querySelectorAll('.key-btn').forEach(btn => {
+        btn.disabled = !enabled;
+      });
+    }
+
+    async function startCall() {
+      document.getElementById('transcript-box').textContent = 'Dialing IVR system...';
+      document.getElementById('status-dot').classList.add('active');
+      document.getElementById('status-text').textContent = 'Call Connected';
+      document.getElementById('btn-call').disabled = true;
+      document.getElementById('btn-hangup').disabled = false;
+      document.getElementById('voicemail-form').style.display = 'none';
+
+      callSeconds = 0;
+      document.getElementById('call-timer').textContent = '00:00';
+      clearInterval(callTimerInterval);
+      callTimerInterval = setInterval(updateTimerDisplay, 1000);
+
+      try {
+        const res = await fetch('/api/sim/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ caller_number: 'Browser User' })
+        });
+        const data = await res.json();
+        currentSessionId = data.session_id;
+        handleServerResponse(data);
+      } catch (err) {
+        document.getElementById('transcript-box').textContent = 'Error connecting to IVR service.';
+        hangupCall();
+      }
+    }
+
+    async function pressKey(digit) {
+      playDtmfTone(digit);
+      if (!currentSessionId) return;
+
+      // If currently on voicemail prompt and user pressed #, save it
+      if (activeVoicemailMenu && digit === '#') {
+        submitVoicemail();
+        return;
+      }
+
+      document.getElementById('transcript-box').textContent = `Sending tone [${digit}]...`;
+      try {
+        const res = await fetch('/api/sim/press', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: currentSessionId, digit: digit })
+        });
+        const data = await res.json();
+        handleServerResponse(data);
+      } catch (err) {
+        document.getElementById('transcript-box').textContent = 'Error processing button press.';
+      }
+    }
+
+    function handleServerResponse(data) {
+      document.getElementById('transcript-box').textContent = data.speech;
+      speakPrompt(data.speech);
+
+      if (data.is_voicemail) {
+        activeVoicemailMenu = data.menu_location || 'general';
+        document.getElementById('voicemail-form').style.display = 'block';
+        document.getElementById('vm-text').focus();
+      } else {
+        document.getElementById('voicemail-form').style.display = 'none';
+        activeVoicemailMenu = null;
+      }
+
+      if (data.hangup) {
+        setKeypadEnabled(false);
+        setTimeout(() => {
+          hangupCall();
+        }, 3500);
+      } else {
+        setKeypadEnabled(data.expect_digits !== false);
+      }
+    }
+
+    async function submitVoicemail() {
+      const textInput = document.getElementById('vm-text');
+      const msg = textInput.value.trim() || 'Simulated callback requested.';
+      textInput.value = '';
+      document.getElementById('voicemail-form').style.display = 'none';
+
+      try {
+        const res = await fetch('/api/sim/voicemail', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            session_id: currentSessionId,
+            menu_location: activeVoicemailMenu,
+            message_text: msg
+          })
+        });
+        const data = await res.json();
+        handleServerResponse(data);
+        refreshLogs();
+      } catch (err) {
+        console.error('Error submitting voicemail:', err);
+      }
+    }
+
+    async function hangupCall() {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      clearInterval(callTimerInterval);
+      setKeypadEnabled(false);
+      document.getElementById('btn-call').disabled = false;
+      document.getElementById('btn-hangup').disabled = true;
+      document.getElementById('status-dot').classList.remove('active');
+      document.getElementById('status-text').textContent = 'Idle (Call Ended)';
+      document.getElementById('voicemail-form').style.display = 'none';
+
+      if (currentSessionId) {
+        const sid = currentSessionId;
+        currentSessionId = null;
+        await fetch('/api/sim/hangup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: sid })
+        });
+        refreshLogs();
+      }
+    }
+
+    async function loadTreeDisplay() {
+      try {
+        const res = await fetch('/api/config');
+        const config = await res.json();
+        let text = `[MAIN MENU]\n${config.welcome_message}\n`;
+        for (const [key, val] of Object.entries(config.main.options)) {
+          const act = val.action === 'submenu' ? `↳ Jump to Submenu [${val.submenu_id}]` : `(${val.action})`;
+          text += `  • Press [${key}] : ${act}\n`;
+        }
+        if (config.submenus) {
+          for (const [subId, subData] of Object.entries(config.submenus)) {
+            text += `\n[SUBMENU: ${subId.toUpperCase()}]\n`;
+            for (const [key, val] of Object.entries(subData.options)) {
+              text += `  • Press [${key}] : (${val.action})\n`;
+            }
+          }
+        }
+        document.getElementById('tree-display').textContent = text;
+      } catch (err) {
+        document.getElementById('tree-display').textContent = 'Failed to load menu tree.';
+      }
+    }
+
+    async function refreshLogs() {
+      try {
+        const res = await fetch('/api/logs');
+        const data = await res.json();
+        
+        // Voicemails
+        const vmContainer = document.getElementById('voicemail-list');
+        if (data.voicemails.length === 0) {
+          vmContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">No voicemails recorded yet.</div>';
+        } else {
+          vmContainer.innerHTML = data.voicemails.map(vm => `
+            <div class="item-card">
+              <div class="item-meta">
+                <span><strong>${vm.caller_id}</strong> (${vm.menu_location})</span>
+                <span>${vm.created_at}</span>
+              </div>
+              <div>"${vm.message_text}"</div>
+            </div>
+          `).join('');
+        }
+
+        // Calls
+        const logContainer = document.getElementById('call-logs-list');
+        if (data.call_logs.length === 0) {
+          logContainer.innerHTML = '<div style="color: var(--text-muted); font-size: 0.85rem;">No call logs recorded yet.</div>';
+        } else {
+          logContainer.innerHTML = data.call_logs.map(log => `
+            <div class="item-card">
+              <div class="item-meta">
+                <span><strong>${log.caller_id}</strong> • ${log.duration_seconds}s</span>
+                <span>${log.created_at}</span>
+              </div>
+              <div style="color: var(--accent); font-size: 0.82rem;">${log.path_taken}</div>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load logs:', err);
+      }
+    }
+
+    // Initial setup
+    window.addEventListener('DOMContentLoaded', () => {
+      loadTreeDisplay();
+      refreshLogs();
+    });
+  </script>
+</body>
+</html>
