@@ -1,0 +1,64 @@
+{
+  "welcome_message": "Thank you for calling Acme Solutions. Please listen carefully to the following options.",
+  "main": {
+    "prompt": "For office hours and location, press 1. For sales inquiries, press 2. For technical support, press 3. To leave a general voicemail, press 4. To repeat this menu, press 9.",
+    "options": {
+      "1": {
+        "action": "message",
+        "say": "Our offices are located at 100 Innovation Way, Suite 400. We are open Monday through Friday from 9 AM to 5 PM Eastern Time. Thank you for calling!",
+        "hangup": true
+      },
+      "2": {
+        "action": "submenu",
+        "submenu_id": "sales"
+      },
+      "3": {
+        "action": "submenu",
+        "submenu_id": "support"
+      },
+      "4": {
+        "action": "voicemail",
+        "say": "Please leave your name, phone number, and a brief message after the beep. Press pound when you are finished."
+      },
+      "9": {
+        "action": "repeat"
+      }
+    }
+  },
+  "submenus": {
+    "sales": {
+      "prompt": "You have reached Sales. Press 1 to request a product demo callback. Press 2 to hear pricing tiers. Press 0 to return to the main menu.",
+      "options": {
+        "1": {
+          "action": "voicemail",
+          "say": "Please leave your company name and contact number for a sales demo. An account representative will call you back within one business day."
+        },
+        "2": {
+          "action": "message",
+          "say": "Our Starter plan begins at $29 per month, and our Enterprise plan begins at $199 per month. Visit our website for detailed feature comparisons. Goodbye!",
+          "hangup": true
+        },
+        "0": {
+          "action": "main_menu"
+        }
+      }
+    },
+    "support": {
+      "prompt": "You have reached Technical Support. Press 1 to check current system operational status. Press 2 to log an urgent support ticket. Press 0 to return to the main menu.",
+      "options": {
+        "1": {
+          "action": "message",
+          "say": "All servers and cloud services are currently operating normally at 100 percent uptime. Goodbye!",
+          "hangup": true
+        },
+        "2": {
+          "action": "voicemail",
+          "say": "Please describe your technical issue and provide your account email address. A technician will be alerted immediately."
+        },
+        "0": {
+          "action": "main_menu"
+        }
+      }
+    }
+  }
+}
